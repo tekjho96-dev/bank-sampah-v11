@@ -21,38 +21,37 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: android-actions/setup-android@v4
         with:
-          gradle-version: '8.9'
+          packages: 'platform-tools'
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - name: Extract V11 package
         run: |
-          rm -rf work
-          mkdir -p work
-          unzip -q Bank_Sampah_V11_Cloud_Build.zip -d work
-          unzip -q work/v11cloud/Bank_Sampah_V11_APK_Android.zip -d work/android
+          mkdir -p v11
+          unzip -o Bank_Sampah_V11_Cloud_Build.zip -d v11
+
+      - name: Find Android project
+        run: |
+          find v11 -name gradlew -type f
 
       - name: Build APK
-        working-directory: work/android/Bank_Sampah_V11_APK_Android
         run: |
-          gradle --no-daemon assembleDebug
+          PROJECT_DIR=$(dirname "$(find v11 -name gradlew -type f | head -1)")
+          cd "$PROJECT_DIR"
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Rename APK
+      - name: Find APK
         run: |
-          mkdir -p output
-          cp work/android/Bank_Sampah_V11_APK_Android/app/build/outputs/apk/debug/app-debug.apk output/Bank-Sampah-V11.apk
+          find v11 -name "*.apk" -type f
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Bank-Sampah-V11-APK
-          path: output/Bank-Sampah-V11.apk
-          if-no-files-found: error
+          path: |
+            v11/**/*.apk
