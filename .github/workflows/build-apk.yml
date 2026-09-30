@@ -28,22 +28,51 @@ jobs:
       - name: Install Android SDK packages
         run: |
           sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
       - name: Extract V11 package
         run: |
           mkdir -p v11
           unzip -o Bank_Sampah_V11_Cloud_Build.zip -d v11
 
+          INNER_ZIP=$(find v11 -name "Bank_Sampah_V11_APK_Android.zip" -type f | head -1)
+
+          if [ -z "$INNER_ZIP" ]; then
+            echo "ZIP Android V11 tidak ditemukan"
+            find v11 -type f
+            exit 1
+          fi
+
+          mkdir -p v11/project
+          unzip -o "$INNER_ZIP" -d v11/project
+
+      - name: Setup Gradle 8.9
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.9'
+
       - name: Find Android project
         run: |
-          find v11 -name gradlew -type f
+          SETTINGS=$(find v11/project -name "settings.gradle" -o -name "settings.gradle.kts" | head -1)
+
+          if [ -z "$SETTINGS" ]; then
+            echo "Project Android tidak ditemukan"
+            find v11/project -maxdepth 4 -type f
+            exit 1
+          fi
+
+          echo "Project ditemukan:"
+          dirname "$SETTINGS"
 
       - name: Build APK
         run: |
-          PROJECT_DIR=$(dirname "$(find v11 -name gradlew -type f | head -1)")
+          SETTINGS=$(find v11/project -name "settings.gradle" -o -name "settings.gradle.kts" | head -1)
+          PROJECT_DIR=$(dirname "$SETTINGS")
+
+          echo "Building dari: $PROJECT_DIR"
+
           cd "$PROJECT_DIR"
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          gradle assembleDebug --no-daemon
+
+      
 
       - name: Find APK
         run: |
