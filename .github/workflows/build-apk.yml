@@ -61,26 +61,34 @@ jobs:
 
           echo "Project ditemukan:"
           dirname "$SETTINGS"
-
+          
       - name: Build APK
         run: |
-          SETTINGS=$(find v11/project -name "settings.gradle" -o -name "settings.gradle.kts" | head -1)
-          PROJECT_DIR=$(dirname "$SETTINGS")
+           SETTINGS=$(find v11/project -name "settings.gradle" -o -name "settings.gradle.kts" | head -1)
+           PROJECT_DIR=$(dirname "$SETTINGS")
 
-          echo "Building dari: $PROJECT_DIR"
+           echo "Building dari: $PROJECT_DIR"
+           cd "$PROJECT_DIR"
 
-          cd "$PROJECT_DIR"
-          gradle assembleDebug --no-daemon
+         
+           touch gradle.properties
+           echo "android.useAndroidX=true" >> gradle.properties
+           echo "android.enableJetifier=true" >> gradle.properties
+
+           echo "Isi gradle.properties:"
+           cat gradle.properties
+
+           gradle assembleDebug --no-daemon
 
       
 
       - name: Find APK
         run: |
-          find v11 -name "*.apk" -type f
+           find v11 -name "*.apk" -type f
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bank-Sampah-V11-APK
-          path: |
-            v11/**/*.apk
+         name: Bank-Sampah-V11-APK          
+         path: |
+          v11/**/*.apk
